@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>زعفران پریمیوم | فروش آنلاین</title>
+  <style>
+    body{font-family:sans-serif;margin:0;background:#fffaf5;color:#333}
+    header{background:#fff;border-bottom:1px solid #ddd;position:sticky;top:0;padding:10px;display:flex;justify-content:space-between;align-items:center}
+    .tabs{display:flex;gap:10px;overflow-x:auto}
+    .tab-btn{padding:6px 12px;border:none;border-radius:8px;cursor:pointer;flex-shrink:0}
+    .tab-btn.active{background:#ffd9e6}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-top:10px}
+    .card{background:#fff;border:1px solid #ddd;border-radius:8px;padding:10px}
+    .mini-cart{position:fixed;bottom:0;left:0;width:100%;background:#fff;border-top:1px solid #ddd;padding:10px;text-align:center}
+    #admin-panel{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#fffafed9;z-index:1000;padding:20px;overflow:auto}
+    /* مودال ورود */
+    #login-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#0005;z-index:2000;align-items:center;justify-content:center}
+    #login-box{background:#fff;padding:20px;border-radius:10px;width:90%;max-width:300px}
+    #login-box input{width:100%;margin:5px 0;padding:8px}
+    @media (max-width:768px){
+      .grid{grid-template-columns:repeat(2,1fr);}
+    }
+    @media (max-width:480px){
+      .grid{grid-template-columns:1fr;}
+      .tab-btn{padding:10px;font-size:14px}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="pack">بسته‌بندی</button>
+    <button class="tab-btn" data-tab="bulk">فله</button>
+    <button class="tab-btn" data-tab="extras">جانبی</button>
+    <button class="tab-btn" data-tab="blog">بلاگ</button>
+    <button class="tab-btn" data-tab="about">درباره</button>
+  </div>
+  <button onclick="openLogin()">ورود</button>
+</header>
+
+<main>
+  <section class="panel active" id="panel-pack"><div class="grid" id="grid-pack"></div></section>
+  <section class="panel" id="panel-bulk"><div class="grid" id="grid-bulk"></div></section>
+  <section class="panel" id="panel-extras"><div class="grid" id="grid-extras"></div></section>
+  <section class="panel" id="panel-blog"><p>مطالب بلاگ...</p></section>
+  <section class="panel" id="panel-about"><p>درباره ما...</p></section>
+</main>
+
+<div class="mini-cart">
+  <span id="cart-count">۰</span> آیتم | <span id="cart-sum">۰ تومان</span>
+</div>
+
+<!-- پنل ادمین -->
+<div id="admin-panel">
+  <h2>پنل مدیریت</h2>
+  <button onclick="closeAdmin()">❌ بستن</button>
+  <div>
+    <h3>ویرایش عنوان سایت</h3>
+    <input id="site-title" type="text" value="زعفران پریمیوم">
+    <button onclick="updateTitle()">ذخیره</button>
+  </div>
+  <div>
+    <h3>افزودن محصول</h3>
+    <input id="new-title" placeholder="نام محصول">
+    <input id="new-price" placeholder="قیمت">
+    <button onclick="addProduct()">افزودن</button>
+  </div>
+</div>
+
+<!-- مودال ورود -->
+<div id="login-modal">
+  <div id="login-box">
+    <h3>ورود</h3>
+    <input id="login-user" placeholder="نام کاربری">
+    <input id="login-pass" type="password" placeholder="رمز عبور">
+    <button onclick="login()">تأیید</button>
+    <button onclick="closeLogin()">بستن</button>
+  </div>
+</div>
+
+<script>
+const catalog = {
+  pack:[
+    {id:'p1',title:'زعفران نگین ۱ گرم',price:320000},
+    {id:'p2',title:'زعفران نگین ۲ گرم',price:600000},
+    {id:'p3',title:'زعفران سرگل ۵ گرم',price:1200000},
+    {id:'p4',title:'زعفران پوشال ۱۰ گرم',price:2000000}
+  ],
+  bulk:[
+    {id:'b1',title:'زعفران نگین فله ۱۰ گرم',price:2150000},
+    {id:'b2',title:'زعفران سرگل فله ۲۰ گرم',price:3800000},
+    {id:'b3',title:'زعفران سوپر نگین ۵۰ گرم',price:9800000}
+  ],
+  extras:[
+    {id:'e1',title:'نبات زعفرانی ۵۰۰ گرم',price:145000},
+    {id:'e2',title:'چای زعفرانی',price:185000},
+    {id:'e3',title:'پودر زعفران ۱۰ بسته',price:390000}
+  ],
+};
+const cart={items:[],sum:0};
+
+function mount(){
+  ['pack','bulk','extras'].forEach(key=>{
+    const grid=document.getElementById(`grid-${key}`);
+    grid.innerHTML='';
+    catalog[key].forEach(item=>{
+      const el=document.createElement('div');
+      el.className='card';
+      el.innerHTML=`<div>${item.title}</div><div>${item.price} تومان</div>
+      <button onclick="addToCart('${item.id}')">افزودن</button>`;
+      grid.appendChild(el);
+    });
+  });
+}
+mount();
+
+function addToCart(id){
+  const item=Object.values(catalog).flat().find(x=>x.id===id);
+  cart.items.push(item);cart.sum+=item.price;
+  document.getElementById('cart-count').textContent=cart.items.length;
+  document.getElementById('cart-sum').textContent=cart.sum+' تومان';
+}
+
+// تب‌ها
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById(`panel-${b.dataset.tab}`).classList.add('active');
+  });
+});
+
+// ورود
+function openLogin(){document.getElementById('login-modal').style.display='flex'}
+function closeLogin(){document.getElementById('login-modal').style.display='none'}
+
+function login(){
+  const user=document.getElementById('login-user').value;
+  const pass=document.getElementById('login-pass').value;
+  if(user==='zarmeh.admin.bagh' && pass==='zarmehr.iran.saffron'){
+    document.getElementById('admin-panel').style.display='block';
+    closeLogin();
+    alert('پنل ادمین فعال شد!');
+  } else {
+    alert('نام کاربری یا رمز اشتباه است');
+  }
+}
+
+// میانبر دسکتاپ
+document.addEventListener('keydown',e=>{
+  if(e.ctrlKey&&e.shiftKey&&e.key==='A'){
+    const pass=prompt('رمز ورود پنل ادمین:');
+    if(pass==='zarmehr.iran.saffron'){
+      document.getElementById('admin-panel').style.display='block';
+    }
+  }
+});
+
+// پنل ادمین
+function closeAdmin(){document.getElementById('admin-panel').style.display='none'}
+function updateTitle(){
+  const val=document.getElementById('site-title').value;
+  document.querySelector('header .brand span
